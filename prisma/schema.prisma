@@ -1,0 +1,32 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL") // Conexão com PostgreSQL
+}
+
+model User {
+  id       String             @id @default(uuid())
+  name     String
+  email    String             @unique
+  password String
+  actions  UserSocialAction[] // Relacionamento
+}
+
+model SocialAction {
+  id          String             @id @default(uuid())
+  title       String
+  description String
+  users       UserSocialAction[] // Relacionamento
+}
+
+model UserSocialAction {
+  userId   String
+  actionId String
+  user     User         @relation(fields: [userId], references: [id])
+  action   SocialAction @relation(fields: [actionId], references: [id])
+
+  @@id([userId, actionId]) // Chave composta para garantir unicidade
+}
