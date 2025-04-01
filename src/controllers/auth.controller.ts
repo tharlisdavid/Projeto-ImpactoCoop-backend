@@ -6,13 +6,15 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 const SECRET_KEY = process.env.JWT_SECRET || "defaultsecret";
 
-export const register = async (req: Request, res: Response) => {
+export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, email, password } = req.body;
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser)
-      return res.status(400).json({ message: "E-mail já cadastrado." });
+    if (existingUser) {
+      res.status(400).json({ message: "E-mail já cadastrado." });
+      return;
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -20,25 +22,27 @@ export const register = async (req: Request, res: Response) => {
       data: { name, email, password: hashedPassword },
     });
 
-    res
-      .status(201)
-      .json({ message: "Usuário criado com sucesso!", user: newUser });
+    res.status(201).json({ message: "Usuário criado com sucesso!", user: newUser });
   } catch (error) {
     res.status(500).json({ message: "Erro no servidor.", error });
   }
 };
 
-export const login = async (req: Request, res: Response) => {
+export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
 
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user)
-      return res.status(400).json({ message: "E-mail ou senha incorretos." });
+    if (!user) {
+      res.status(400).json({ message: "E-mail ou senha incorretos." });
+      return;
+    }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid)
-      return res.status(400).json({ message: "E-mail ou senha incorretos." });
+    if (!isPasswordValid) {
+      res.status(400).json({ message: "E-mail ou senha incorretos." });
+      return;
+    }
 
     const token = jwt.sign({ userId: user.id }, SECRET_KEY, {
       expiresIn: "2h",
@@ -49,3 +53,4 @@ export const login = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Erro no servidor.", error });
   }
 };
+
